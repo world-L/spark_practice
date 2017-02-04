@@ -104,6 +104,71 @@ object RandomForestModel extends Loader[RandomForestModel] {
   }
 
 }
+/**
+ * Represents another random forest model.
+ *
+ * @param algo algorithm for the ensemble model, either Classification or Regression
+ * @param trees tree ensembles
+ */
+@Since("1.2.0")
+class RandomForestModel2 @Since("1.2.0") (
+    @Since("1.2.0") override val algo: Algo,
+    @Since("1.2.0") override val trees: Array[DecisionTreeModel])
+  extends TreeEnsembleModel(algo, trees, Array.fill(trees.length)(1.0),
+    combiningStrategy = if (algo == Classification) Vote else Average)
+  with Saveable {
+
+  require(trees.forall(_.algo == algo))
+
+  /**
+   *
+   * @param sc  Spark context used to save model data.
+   * @param path  Path specifying the directory in which to save this model.
+   *              If the directory already exists, this method throws an exception.
+   */
+  @Since("1.3.0")
+  override def save(sc: SparkContext, path: String): Unit = {
+    TreeEnsembleModel.SaveLoadV1_0.save(sc, path, this,
+      RandomForestModel2.SaveLoadV1_0.thisClassName)
+  }
+
+  override protected def formatVersion: String = RandomForestModel2.formatVersion
+}
+
+@Since("1.3.0")
+object RandomForestModel2 extends Loader[RandomForestModel] {
+
+  private[mllib] def formatVersion: String = TreeEnsembleModel.SaveLoadV1_0.thisFormatVersion
+
+  /**
+   *
+   * @param sc  Spark context used for loading model files.
+   * @param path  Path specifying the directory to which the model was saved.
+   * @return  Model instance
+   */
+  @Since("1.3.0")
+  override def load(sc: SparkContext, path: String): RandomForestModel2 = {
+    val (loadedClassName, version, jsonMetadata) = Loader.loadMetadata(sc, path)
+    val classNameV1_0 = SaveLoadV1_0.thisClassName
+    (loadedClassName, version) match {
+      case (className, "1.0") if className == classNameV1_0 =>
+        val metadata = TreeEnsembleModel.SaveLoadV1_0.readMetadata(jsonMetadata)
+        assert(metadata.treeWeights.forall(_ == 1.0))
+        val trees =
+          TreeEnsembleModel.SaveLoadV1_0.loadTrees(sc, path, metadata.treeAlgo)
+        new RandomForestModel2(Algo.fromString(metadata.algo), trees)
+      case _ => throw new Exception(s"RandomForestModel2.load did not recognize model" +
+        s" with (className, format version): ($loadedClassName, $version).  Supported:\n" +
+        s"  ($classNameV1_0, 1.0)")
+    }
+  }
+
+  private object SaveLoadV1_0 {
+    // Hard-code class name string in case it changes in the future
+    def thisClassName: String = "org.apache.spark.mllib.tree.model.RandomForestModel2"
+  }
+
+}
 
 /**
  * Represents a gradient boosted trees model.
