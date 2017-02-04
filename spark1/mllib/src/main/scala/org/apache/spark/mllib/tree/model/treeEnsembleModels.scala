@@ -136,7 +136,7 @@ class RandomForestModel2 @Since("1.2.0") (
 }
 
 @Since("1.3.0")
-object RandomForestModel2 extends Loader[RandomForestModel] {
+object RandomForestModel2 extends Loader[RandomForestModel2] {
 
   private[mllib] def formatVersion: String = TreeEnsembleModel.SaveLoadV1_0.thisFormatVersion
 

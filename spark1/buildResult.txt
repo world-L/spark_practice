@@ -1,0 +1,4 @@
+4 2 2017 19:36
+[ERROR] /build/test/test1/mllib/src/main/scala/org/apache/spark/mllib/tree/model/treeEnsembleModels.scala:150: overriding method load in trait Loader of type (sc: org.apache.spark.SparkContext, path: String)org.apache.spark.mllib.tree.model.RandomForestModel;
+ method load has incompatible type
+[ERROR]   override def load(sc: SparkContext, path: String): RandomForestModel2 = {
