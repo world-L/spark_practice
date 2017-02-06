@@ -289,6 +289,19 @@ class RandomForestModel(TreeEnsembleModel, JavaLoader):
         return "org.apache.spark.mllib.tree.model.RandomForestModel"
 
 
+@inherit_doc
+class RandomForestModel2(TreeEnsembleModel, JavaLoader):
+    """
+    Represents a random forest model.
+
+    .. versionadded:: 1.2.0
+    """
+
+    @classmethod
+    def _java_loader_class(cls):
+        return "org.apache.spark.mllib.tree.model.RandomForestModel"        
+
+
 class RandomForest(object):
     """
     Learning algorithm for a random forest model for classification or
@@ -311,7 +324,7 @@ class RandomForest(object):
         model = callMLlibFunc("trainRandomForestModel", data, algo, numClasses,
                               categoricalFeaturesInfo, numTrees, featureSubsetStrategy, impurity,
                               maxDepth, maxBins, seed)
-        return RandomForestModel(model)
+        return RandomForestModel2(model)
 
     @classmethod
     @since("1.2.0")
