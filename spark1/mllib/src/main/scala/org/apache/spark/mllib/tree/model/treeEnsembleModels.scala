@@ -111,7 +111,7 @@ object RandomForestModel extends Loader[RandomForestModel] {
  * @param trees tree ensembles
  */
 @Since("1.2.0")
-class RandomForestModel2 @Since("1.2.0") (
+class CustomEnsembleModel @Since("1.2.0") (
     @Since("1.2.0") override val algo: Algo,
     @Since("1.2.0") override val trees: Array[DecisionTreeModel])
   extends TreeEnsembleModel(algo, trees, Array.fill(trees.length)(1.0),
@@ -129,14 +129,14 @@ class RandomForestModel2 @Since("1.2.0") (
   @Since("1.3.0")
   override def save(sc: SparkContext, path: String): Unit = {
     TreeEnsembleModel.SaveLoadV1_0.save(sc, path, this,
-      RandomForestModel2.SaveLoadV1_0.thisClassName)
+      CustomEnsembleModel.SaveLoadV1_0.thisClassName)
   }
 
   override protected def formatVersion: String = RandomForestModel2.formatVersion
 }
 
 @Since("1.3.0")
-object RandomForestModel2 extends Loader[RandomForestModel2] {
+object CustomEnsembleModel extends Loader[CustomEnsembleModel] {
 
   private[mllib] def formatVersion: String = TreeEnsembleModel.SaveLoadV1_0.thisFormatVersion
 
@@ -147,7 +147,7 @@ object RandomForestModel2 extends Loader[RandomForestModel2] {
    * @return  Model instance
    */
   @Since("1.3.0")
-  override def load(sc: SparkContext, path: String): RandomForestModel2 = {
+  override def load(sc: SparkContext, path: String): CustomEnsembleModel = {
     val (loadedClassName, version, jsonMetadata) = Loader.loadMetadata(sc, path)
     val classNameV1_0 = SaveLoadV1_0.thisClassName
     (loadedClassName, version) match {
@@ -156,8 +156,8 @@ object RandomForestModel2 extends Loader[RandomForestModel2] {
         assert(metadata.treeWeights.forall(_ == 1.0))
         val trees =
           TreeEnsembleModel.SaveLoadV1_0.loadTrees(sc, path, metadata.treeAlgo)
-        new RandomForestModel2(Algo.fromString(metadata.algo), trees)
-      case _ => throw new Exception(s"RandomForestModel2.load did not recognize model" +
+        new CustomEnsembleModel(Algo.fromString(metadata.algo), trees)
+      case _ => throw new Exception(s"CustomEnsembleModel.load did not recognize model" +
         s" with (className, format version): ($loadedClassName, $version).  Supported:\n" +
         s"  ($classNameV1_0, 1.0)")
     }
@@ -165,7 +165,7 @@ object RandomForestModel2 extends Loader[RandomForestModel2] {
 
   private object SaveLoadV1_0 {
     // Hard-code class name string in case it changes in the future
-    def thisClassName: String = "org.apache.spark.mllib.tree.model.RandomForestModel2"
+    def thisClassName: String = "org.apache.spark.mllib.tree.model.CustomEnsembleModel"
   }
 
 }
