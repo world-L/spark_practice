@@ -22,7 +22,7 @@ from __future__ import print_function
 
 from pyspark import SparkContext
 # $example on$
-from pyspark.mllib.tree import RandomForest, RandomForestModel
+from pyspark.mllib.tree import RandomForest2, RandomForestModel2
 from pyspark.mllib.util import MLUtils
 # $example off$
 
