@@ -132,7 +132,7 @@ class CustomEnsembleModel @Since("1.2.0") (
       CustomEnsembleModel.SaveLoadV1_0.thisClassName)
   }
 
-  override protected def formatVersion: String = RandomForestModel2.formatVersion
+  override protected def formatVersion: String = CustomEnsembleModel.formatVersion
 }
 
 @Since("1.3.0")
