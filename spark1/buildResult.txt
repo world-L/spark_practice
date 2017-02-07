@@ -4,7 +4,10 @@
 [ERROR]   override def load(sc: SparkContext, path: String): RandomForestModel2 = {
 
 6 2 2017 22:49
-
 return "org.apache.spark.mllib.tree.model.RandomForestModel" 구문을 확인하기 위하여 추가. 빌드 성공
 추가적으로 4 2 2017 19:36 에서 발생한 에러는 5 2 2017 0:54에 추가한 수정사항으로 해결
+
+
+7 2 2017 14:20
+빌드 성공, scala mllib와 pyspark간의 연계 확인 각 파일별 RandomForest2 class 추가
 
