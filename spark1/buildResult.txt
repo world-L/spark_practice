@@ -16,3 +16,6 @@ return "org.apache.spark.mllib.tree.model.RandomForestModel" ±¸¹®À» È®ÀÎÇÏ±â À§Ç
 
 7 2 2017 21:37
 ºôµå ½ÇÆĞ, ¹ÌÀû¿ë »çÇ× ÆÄ¾ÇÈÄ Àç½Ãµµ
+
+9 2 2017 12:54
+ºôµå ½ÇÆĞ ml.tree ÄÚµå ¹ÌÀû¿ë
