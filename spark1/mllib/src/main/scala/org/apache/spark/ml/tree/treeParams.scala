@@ -446,6 +446,101 @@ private[ml] trait RandomForestClassifierParams
 private[ml] trait RandomForestRegressorParams
   extends RandomForestParams with TreeRegressorParams
 
+
+/**
+ * Parameters for CustomEnsemble algorithms.
+ */
+private[ml] trait CustomEnsembleParams extends TreeEnsembleParams {
+
+  /**
+   * Number of trees to train (>= 1).
+   * If 1, then no bootstrapping is used.  If > 1, then bootstrapping is done.
+   * TODO: Change to always do bootstrapping (simpler).  SPARK-7130
+   * (default = 20)
+   *
+   * Note: The reason that we cannot add this to both GBT and RF (i.e. in TreeEnsembleParams)
+   * is the param `maxIter` controls how many trees a GBT has. The semantics in the algorithms
+   * are a bit different.
+   * @group param
+   */
+  final val numTrees: IntParam = new IntParam(this, "numTrees", "Number of trees to train (>= 1)",
+    ParamValidators.gtEq(1))
+
+  setDefault(numTrees -> 20)
+
+  /**
+   * @deprecated This method is deprecated and will be removed in 2.2.0.
+   * @group setParam
+   */
+  @deprecated("This method is deprecated and will be removed in 2.2.0.", "2.1.0")
+  def setNumTrees(value: Int): this.type = set(numTrees, value)
+
+  /** @group getParam */
+  final def getNumTrees: Int = $(numTrees)
+
+  /**
+   * The number of features to consider for splits at each tree node.
+   * Supported options:
+   *  - "auto": Choose automatically for task:
+   *            If numTrees == 1, set to "all."
+   *            If numTrees > 1 (forest), set to "sqrt" for classification and
+   *              to "onethird" for regression.
+   *  - "all": use all features
+   *  - "onethird": use 1/3 of the features
+   *  - "sqrt": use sqrt(number of features)
+   *  - "log2": use log2(number of features)
+   *  - "n": when n is in the range (0, 1.0], use n * number of features. When n
+   *         is in the range (1, number of features), use n features.
+   * (default = "auto")
+   *
+   * These various settings are based on the following references:
+   *  - log2: tested in Breiman (2001)
+   *  - sqrt: recommended by Breiman manual for random forests
+   *  - The defaults of sqrt (classification) and onethird (regression) match the R randomForest
+   *    package.
+   * @see <a href="http://www.stat.berkeley.edu/~breiman/randomforest2001.pdf">Breiman (2001)</a>
+   * @see <a href="http://www.stat.berkeley.edu/~breiman/Using_random_forests_V3.1.pdf">
+   * Breiman manual for random forests</a>
+   *
+   * @group param
+   */
+  final val featureSubsetStrategy: Param[String] = new Param[String](this, "featureSubsetStrategy",
+    "The number of features to consider for splits at each tree node." +
+      s" Supported options: ${CustomEnsembleParams.supportedFeatureSubsetStrategies.mkString(", ")}" +
+      s", (0.0-1.0], [1-n].",
+    (value: String) =>
+      CustomEnsembleParams.supportedFeatureSubsetStrategies.contains(value.toLowerCase)
+      || Try(value.toInt).filter(_ > 0).isSuccess
+      || Try(value.toDouble).filter(_ > 0).filter(_ <= 1.0).isSuccess)
+
+  setDefault(featureSubsetStrategy -> "auto")
+
+  /**
+   * @deprecated This method is deprecated and will be removed in 2.2.0.
+   * @group setParam
+   */
+  @deprecated("This method is deprecated and will be removed in 2.2.0.", "2.1.0")
+  def setFeatureSubsetStrategy(value: String): this.type = set(featureSubsetStrategy, value)
+
+  /** @group getParam */
+  final def getFeatureSubsetStrategy: String = $(featureSubsetStrategy).toLowerCase
+}
+
+private[spark] object CustomEnsembleParams {
+  // These options should be lowercase.
+  final val supportedFeatureSubsetStrategies: Array[String] =
+    Array("auto", "all", "onethird", "sqrt", "log2").map(_.toLowerCase)
+}
+
+private[ml] trait CustomEnsembleClassifierParams
+  extends CustomEnsembleParams with TreeClassifierParams
+
+private[ml] trait CustomEnsembleRegressorParams
+  extends CustomEnsembleParams with TreeRegressorParams
+
+
+
+
 /**
  * Parameters for Gradient-Boosted Tree algorithms.
  *

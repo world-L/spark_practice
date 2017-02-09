@@ -26,8 +26,8 @@ from pyspark.mllib.regression import LabeledPoint
 from pyspark.mllib.util import JavaLoader, JavaSaveable
 
 __all__ = ['DecisionTreeModel', 'DecisionTree', 'RandomForestModel',
-           'RandomForest','RandomForestModel2',
-           'RandomForest2', 'GradientBoostedTreesModel', 'GradientBoostedTrees']
+           'RandomForest','CustomEnsembleModel',
+           'CustomEnsemble', 'GradientBoostedTreesModel', 'GradientBoostedTrees']
 
 
 class TreeEnsembleModel(JavaModelWrapper, JavaSaveable):
@@ -321,7 +321,7 @@ class CustomEnsemble(object):
             raise ValueError("unsupported featureSubsetStrategy: %s" % featureSubsetStrategy)
         if seed is None:
             seed = random.randint(0, 1 << 30)
-        model = callMLlibFunc("trainRandomForestModel", data, algo, numClasses,
+        model = callMLlibFunc("trainCustomEnsembleModel", data, algo, numClasses,
                               categoricalFeaturesInfo, numTrees, featureSubsetStrategy, impurity,
                               maxDepth, maxBins, seed)
         return CustomEnsembleModel(model)

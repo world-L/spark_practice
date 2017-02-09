@@ -45,12 +45,12 @@ import org.apache.spark.mllib.stat.{KernelDensity, MultivariateStatisticalSummar
 import org.apache.spark.mllib.stat.correlation.CorrelationNames
 import org.apache.spark.mllib.stat.distribution.MultivariateGaussian
 import org.apache.spark.mllib.stat.test.{ChiSqTestResult, KolmogorovSmirnovTestResult}
-import org.apache.spark.mllib.tree.{DecisionTree, GradientBoostedTrees, RandomForest}
+import org.apache.spark.mllib.tree.{DecisionTree, GradientBoostedTrees, RandomForest,CustomEnsemble}
 import org.apache.spark.mllib.tree.configuration.{Algo, BoostingStrategy, Strategy}
 import org.apache.spark.mllib.tree.impurity._
 import org.apache.spark.mllib.tree.loss.Losses
 import org.apache.spark.mllib.tree.model.{DecisionTreeModel, GradientBoostedTreesModel,
-  RandomForestModel}
+  RandomForestModel,CustomEnsembleModel}
 import org.apache.spark.mllib.util.{LinearDataGenerator, MLUtils}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
@@ -780,6 +780,46 @@ private[python] class PythonMLLibAPI extends Serializable {
         RandomForest.trainClassifier(cached, strategy, numTrees, featureSubsetStrategy, intSeed)
       } else {
         RandomForest.trainRegressor(cached, strategy, numTrees, featureSubsetStrategy, intSeed)
+      }
+    } finally {
+      cached.unpersist(blocking = false)
+    }
+  }
+  /**
+   * Java stub for Python mllib CustomEnsemble.train().
+   * This stub returns a handle to the Java object instead of the content of the Java object.
+   * Extra care needs to be taken in the Python code to ensure it gets freed on exit;
+   * see the Py4J documentation.
+   */
+  def trainCustomEnsembleModel(
+      data: JavaRDD[LabeledPoint],
+      algoStr: String,
+      numClasses: Int,
+      categoricalFeaturesInfo: JMap[Int, Int],
+      numTrees: Int,
+      featureSubsetStrategy: String,
+      impurityStr: String,
+      maxDepth: Int,
+      maxBins: Int,
+      seed: java.lang.Long): CustomEnsembleModel = {
+
+    val algo = Algo.fromString(algoStr)
+    val impurity = Impurities.fromString(impurityStr)
+    val strategy = new Strategy(
+      algo = algo,
+      impurity = impurity,
+      maxDepth = maxDepth,
+      numClasses = numClasses,
+      maxBins = maxBins,
+      categoricalFeaturesInfo = categoricalFeaturesInfo.asScala.toMap)
+    val cached = data.rdd.persist(StorageLevel.MEMORY_AND_DISK)
+    // Only done because methods below want an int, not an optional Long
+    val intSeed = getSeedOrDefault(seed).toInt
+    try {
+      if (algo == Algo.Classification) {
+        CustomEnsemble.trainClassifier(cached, strategy, numTrees, featureSubsetStrategy, intSeed)
+      } else {
+        CustomEnsemble.trainRegressor(cached, strategy, numTrees, featureSubsetStrategy, intSeed)
       }
     } finally {
       cached.unpersist(blocking = false)
