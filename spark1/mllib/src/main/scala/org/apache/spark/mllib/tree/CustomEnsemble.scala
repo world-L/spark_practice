@@ -23,7 +23,7 @@ import scala.util.Try
 import org.apache.spark.annotation.Since
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.internal.Logging
-import org.apache.spark.ml.tree.{DecisionTreeModel => NewDTModel, CustomEnsembleModel => NewCEParams}
+import org.apache.spark.ml.tree.{DecisionTreeModel => NewDTModel, CustomEnsembleParams => NewCEParams}
 import org.apache.spark.ml.tree.impl.{CustomEnsemble => NewCustomEnsemble}
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.tree.configuration.Algo._
