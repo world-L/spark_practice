@@ -19,3 +19,7 @@ return "org.apache.spark.mllib.tree.model.RandomForestModel" ±¸¹®À» È®ÀÎÇÏ±â À§Ç
 
 9 2 2017 12:54
 ºôµå ½ÇÆĞ ml.tree ÄÚµå ¹ÌÀû¿ë
+
+8 2 2017 17:25
+
+ºôµå ¼º°ø, customEnsemble ¶óÀÌºê·¯¸® Àû¿ë ¿Ï·á
