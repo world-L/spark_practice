@@ -277,50 +277,123 @@ class DecisionTree(object):
                           impurity, maxDepth, maxBins, minInstancesPerNode, minInfoGain)
 
 
-@inherit_doc
-class RandomForestModel(TreeEnsembleModel, JavaLoader):
-    """
-    Represents a random forest model.
-
-    .. versionadded:: 1.2.0
-    """
-
-    @classmethod
-    def _java_loader_class(cls):
-        return "org.apache.spark.mllib.tree.model.RandomForestModel"
 
 
 @inherit_doc
 class CustomEnsembleModel(TreeEnsembleModel, JavaLoader):
     """
-    Represents a random forest model.
+    Represents a Custom Ensemble model.
 
-    .. versionadded:: 1.2.0
+    .. versionadded:: 2.1.0
     """
 
     @classmethod
     def _java_loader_class(cls):
         return "org.apache.spark.mllib.tree.model.CustomEnsembleModel"    
 
+@inherit_doc
+class CustomEnsembleCrossValidation(object):
+    '''
+    Represets a Custom Ensemble Cross Validation model.
+
+    .. versionadded:: 2.1.0
+    '''
+    @classmethod
+    def __init__(cls,datagroup,crossValidationModel):
+        cls.splitData = datagroup
+        cls.crossValidationModel = crossValidationModel
+
+    def getModelSize(self):
+      return len(self.splitData)
+
+    def predict(self):
+      result = 0.0
+      
+      accuracy = self.getPredictList()
+
+      for i in range(self.getModelSize()):
+        result += accuracy[i]
+      
+      result /= self.getModelSize()
+      return result 
+
+    def getPredictList(self):
+      assert self.splitData != None , "method for cross validation"
+      assert self.crossValidationModel != None, "method for cross validation"
+
+      split_predict = [None]*self.getModelSize()
+      split_labels_and_preds = [None]*self.getModelSize()
+      split_test_accuracy = [None]*self.getModelSize()
+
+      for i in range(self.getModelSize()):
+        split_predict[i] = self.crossValidationModel[i].predict(self.splitData[i].map(lambda x: x.features))
+        split_labels_and_preds[i] = self.splitData[i].map(lambda p : p.label).zip(split_predict[i])
+        split_test_accuracy[i] = split_labels_and_preds[i].filter(lambda (v, p): v == p).count() / float(self.splitData[i].count())
+     
+      return split_test_accuracy  
+
 class CustomEnsemble(object):
     """
-    Learning algorithm for a random forest model for classification or
+    Learning algorithm for a Custom Ensemble model for classification or
     regression.
 
-    .. versionadded:: 1.2.0
-    """
+    .. versionadded:: 2.1.0
 
+    """
     supportedFeatureSubsetStrategies = ("auto", "all", "sqrt", "log2", "onethird")
+    supportedCrossval = ("auto","true","false")
 
     @classmethod
     def _train(cls, data, algo, numClasses, categoricalFeaturesInfo, numTrees,
-               featureSubsetStrategy, impurity, maxDepth, maxBins, seed):
+               featureSubsetStrategy, impurity, maxDepth, maxBins, seed, crossval,splitSize):
+        
+        def crossValidation():
+          
+          datagroup = [None]*splitSize
+          weights = [1.0/splitSize]*splitSize
+
+          split_model = [None]*splitSize
+          crossValidationModel = [None]*splitSize
+
+          datagroup = data.randomSplit(weights,seed)
+
+          def callRDD(index):
+  
+            union_RDD = None
+  
+            for k in range(splitSize):
+              if k != index:
+                if union_RDD == None:
+                  union_RDD = datagroup[k]
+                else:
+                  union_RDD = union_RDD.union(datagroup[k])
+            return union_RDD
+
+          for i in range(splitSize):
+            split_model[i] = callMLlibFunc("trainCustomEnsembleModel", callRDD(i), algo, numClasses,
+                              categoricalFeaturesInfo, numTrees, featureSubsetStrategy, impurity,
+                              maxDepth, maxBins, seed)
+            crossValidationModel[i] = CustomEnsembleModel(split_model[i])
+
+          return CustomEnsembleCrossValidation(datagroup,crossValidationModel)
+
         first = data.first()
         assert isinstance(first, LabeledPoint), "the data should be RDD of LabeledPoint"
         if featureSubsetStrategy not in cls.supportedFeatureSubsetStrategies:
             raise ValueError("unsupported featureSubsetStrategy: %s" % featureSubsetStrategy)
         if seed is None:
             seed = random.randint(0, 1 << 30)
+
+        #check crossValidation option
+        if crossval not in cls.supportedCrossval:
+          raise ValueError("unsupported Crossval: %s" % crossval)
+        if splitSize <= 0:
+          raise ValueError("incorrect Value: %d " % splitSize)  
+        if (data.count() < 300 and crossval == 'auto') or crossval == 'true':
+          return crossValidation()
+              
+
+
         model = callMLlibFunc("trainCustomEnsembleModel", data, algo, numClasses,
                               categoricalFeaturesInfo, numTrees, featureSubsetStrategy, impurity,
                               maxDepth, maxBins, seed)
@@ -330,7 +403,7 @@ class CustomEnsemble(object):
     @since("1.2.0")
     def trainClassifier(cls, data, numClasses, categoricalFeaturesInfo, numTrees,
                         featureSubsetStrategy="auto", impurity="gini", maxDepth=4, maxBins=32,
-                        seed=None):
+                        seed=None,crossval = "auto",splitSize = 5):
         """
         Train a random forest model for binary or multiclass
         classification.
@@ -368,8 +441,21 @@ class CustomEnsemble(object):
           Random seed for bootstrapping and choosing feature subsets.
           Set as None to generate seed based on system time.
           (default: None)
+        :param crossval:
+          Criterion used for CrossValidation
+          Supported values: "auto", "true", "false"
+          If "auto" is set, this parameter is set based on data(RDD) scale:
+          if data's scale < 300, set to "true".
+          if data's scale >= 300, set to "false".
+          (default: "auto")
+        :param splitSize:
+          Number of data group for using crossValidation
+          (default: 5)
         :return:
+          If "crossValidation" not used: 
           RandomForestModel that can be used for prediction.
+          If "crossValidation" used: 
+          List that contain RandomForestModel that can be used for prediction.
 
         Example usage:
 
@@ -416,12 +502,12 @@ class CustomEnsemble(object):
         """
         return cls._train(data, "classification", numClasses,
                           categoricalFeaturesInfo, numTrees, featureSubsetStrategy, impurity,
-                          maxDepth, maxBins, seed)
+                          maxDepth, maxBins, seed,crossval,splitSize)
 
     @classmethod
     @since("1.2.0")
     def trainRegressor(cls, data, categoricalFeaturesInfo, numTrees, featureSubsetStrategy="auto",
-                       impurity="variance", maxDepth=4, maxBins=32, seed=None):
+                       impurity="variance", maxDepth=4, maxBins=32, seed=None, crossval = "auto",splitSize = 5):
         """
         Train a random forest model for regression.
 
@@ -485,8 +571,20 @@ class CustomEnsemble(object):
         [1.0, 0.5]
         """
         return cls._train(data, "regression", 0, categoricalFeaturesInfo, numTrees,
-                          featureSubsetStrategy, impurity, maxDepth, maxBins, seed)
+                          featureSubsetStrategy, impurity, maxDepth, maxBins, seed,crossval,splitSize)
 
+
+@inherit_doc
+class RandomForestModel(TreeEnsembleModel, JavaLoader):
+    """
+    Represents a random forest model.
+
+    .. versionadded:: 1.2.0
+    """
+
+    @classmethod
+    def _java_loader_class(cls):
+        return "org.apache.spark.mllib.tree.model.RandomForestModel"
 
 class RandomForest(object):
     """
