@@ -298,7 +298,7 @@ if __name__ == "__main__":
     #print('Test Error = ' + str(testErr))
     
     print('Learned classification result:')
-    print(model.getPredicrtList())
+    print(model.getPredictList())
     print(model.predict())
 
     # Save and load model
