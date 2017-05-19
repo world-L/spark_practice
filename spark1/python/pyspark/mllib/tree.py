@@ -18,6 +18,7 @@
 from __future__ import absolute_import
 
 import random
+import math
 
 from pyspark import SparkContext, RDD, since
 from pyspark.mllib.common import callMLlibFunc, inherit_doc, JavaModelWrapper
@@ -299,7 +300,7 @@ class CustomEnsembleCrossValidation(object):
     .. versionadded:: 2.1.0
     '''
     @classmethod
-    def __init__(cls,datagroup,crossValidationModel):
+    def __init__(cls,datagroup,crossValidationModel,algo):
         cls.splitData = datagroup
         cls.crossValidationModel = crossValidationModel
 
@@ -325,11 +326,17 @@ class CustomEnsembleCrossValidation(object):
       split_labels_and_preds = [None]*self.getModelSize()
       split_test_accuracy = [None]*self.getModelSize()
 
-      for i in range(self.getModelSize()):
-        split_predict[i] = self.crossValidationModel[i].predict(self.splitData[i].map(lambda x: x.features))
-        split_labels_and_preds[i] = self.splitData[i].map(lambda p : p.label).zip(split_predict[i])
-        split_test_accuracy[i] = split_labels_and_preds[i].filter(lambda (v, p): v == p).count() / float(self.splitData[i].count())
-     
+      if algo == "classification":
+        for i in range(self.getModelSize()):
+          split_predict[i] = self.crossValidationModel[i].predict(self.splitData[i].map(lambda x: x.features))
+          split_labels_and_preds[i] = self.splitData[i].map(lambda p : p.label).zip(split_predict[i])
+          split_test_accuracy[i] = split_labels_and_preds[i].filter(lambda (v, p): v == p).count() / float(self.splitData[i].count())
+      else:
+        for i in range(self.getModelSize()):
+          split_predict[i] = self.crossValidationModel[i].predict(self.splitData[i].map(lambda x: x.features))
+          split_labels_and_preds[i] = self.splitData[i].map(lambda p : p.label).zip(split_predict[i])
+          split_test_accuracy[i] = math.sqrt(split_labels_and_preds[i].map(lambda (v, p): (v - p)**2).sum() / float(self.splitData[i].count()))
+      
       return split_test_accuracy  
 
 class CustomEnsemble(object):
@@ -375,7 +382,7 @@ class CustomEnsemble(object):
                               maxDepth, maxBins, seed)
             crossValidationModel[i] = CustomEnsembleModel(split_model[i])
 
-          return CustomEnsembleCrossValidation(datagroup,crossValidationModel)
+          return CustomEnsembleCrossValidation(datagroup,crossValidationModel,algo)
 
         first = data.first()
         assert isinstance(first, LabeledPoint), "the data should be RDD of LabeledPoint"
@@ -507,7 +514,7 @@ class CustomEnsemble(object):
     @classmethod
     @since("1.2.0")
     def trainRegressor(cls, data, categoricalFeaturesInfo, numTrees, featureSubsetStrategy="auto",
-                       impurity="variance", maxDepth=4, maxBins=32, seed=None, crossval = "auto",splitSize = 5):
+                       impurity="variance", maxDepth=20, maxBins=32, seed=None, crossval = "auto",splitSize = 5):
         """
         Train a random forest model for regression.
 
