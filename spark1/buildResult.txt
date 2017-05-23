@@ -27,4 +27,7 @@ return "org.apache.spark.mllib.tree.model.RandomForestModel" ±¸¹®À» È®ÀÎÇÏ±â À§Ç
 ºôµå ¼º°ø, Cross Validation ÄÚµå Ãß°¡
 
 23 2 2017 21:10
-Å×½ºÆ® ¼º°ø, (301 line ¼öÁ¤) 
+Å×½ºÆ® ¼º°ø, (301 line ¼öÁ¤)
+
+20 5 2017 03:41
+ºôµå ¼º°ø, Cross Validation - regression Ãß°¡, train_regressor ÆÄ¶ó¹ÌÅÍ Á¶Á¤ 
