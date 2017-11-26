@@ -510,7 +510,7 @@ private[spark] object CustomEnsemble extends Logging {
     // then best splits for nodes are found there.
     // Finally, only best Splits for nodes are collected to driver to construct decision tree.
     val nodeToFeatures = getNodeToFeatures(treeToNodeToIndexInfo)
-    val nodeToFeaturesBc = input.sparkContext.broadcast(nodeToFeatures)
+    val nodeToFeaturesBc = input.sparkContext.broadcast(nodeToFeatures)  
 
     val partitionAggregates: RDD[(Int, DTStatsAggregator)] = if (nodeIdCache.nonEmpty) {
       input.zip(nodeIdCache.get.nodeIdsForInstances).mapPartitions { points =>
